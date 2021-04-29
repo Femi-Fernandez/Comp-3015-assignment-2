@@ -4,16 +4,40 @@
 #include "helper/scene.h"
 
 #include <glad/glad.h>
-#include "helper/glslprogram.h"
 
+#include "helper/glslprogram.h"
+#include "helper/Objmesh.h"
+#include "helper/torus.h"
+#include "helper/plane.h"
+#include "helper/frustum.h"
 class SceneBasic_Uniform : public Scene
 {
 private:
-    GLuint vaoHandle;
-    GLSLProgram prog;
-    float angle;
+    
+    GLSLProgram volumeProg, renderProg, compProg;
+    GLuint colorDepthFBO, fsQuad;
+    GLuint bikeTex, bikeTexNorm, brickTex, brickTexNorm;
+
+    Plane plane;
+    std::unique_ptr<ObjMesh> spot;
+
+    glm::vec4 lightPos;
+
+    float angle, tPrev, rotSpeed;
+
+    void setMatrices(GLSLProgram &);
 
     void compile();
+
+    void setupFBO();
+    void drawScene(GLSLProgram &, bool);
+    void pass1();
+    void pass2();
+    void pass3();
+    void updateLight();
+
+
+    //void spitOutDepthBuffer();
 
 public:
     SceneBasic_Uniform();

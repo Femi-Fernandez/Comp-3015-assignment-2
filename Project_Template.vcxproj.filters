@@ -42,12 +42,51 @@
     <ClCompile Include="scenebasic_uniform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="helper\objmesh.cpp">
+      <Filter>helper</Filter>
+    </ClCompile>
+    <ClCompile Include="helper\plane.cpp">
+      <Filter>helper</Filter>
+    </ClCompile>
+    <ClCompile Include="helper\skybox.cpp">
+      <Filter>helper</Filter>
+    </ClCompile>
+    <ClCompile Include="helper\texture.cpp">
+      <Filter>helper</Filter>
+    </ClCompile>
+    <ClCompile Include="helper\trianglemesh.cpp">
+      <Filter>helper</Filter>
+    </ClCompile>
+    <ClCompile Include="helper\stb\stb_image.cpp">
+      <Filter>helper\stb</Filter>
+    </ClCompile>
+    <ClCompile Include="helper\torus.cpp">
+      <Filter>helper</Filter>
+    </ClCompile>
+    <ClCompile Include="helper\frustum.cpp">
+      <Filter>helper</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader\basic_uniform.frag">
       <Filter>shaders</Filter>
     </None>
     <None Include="shader\basic_uniform.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shader\basic_uniform.geom">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shader\shadowVolume\shadowvolume-comp.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shader\shadowVolume\shadowvolume-comp.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shader\shadowVolume\shadowvolume-render.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shader\shadowVolume\shadowvolume-render.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>
@@ -74,6 +113,33 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="helper\drawable.h">
+      <Filter>helper</Filter>
+    </ClInclude>
+    <ClInclude Include="helper\aabb.h">
+      <Filter>helper</Filter>
+    </ClInclude>
+    <ClInclude Include="helper\objmesh.h">
+      <Filter>helper</Filter>
+    </ClInclude>
+    <ClInclude Include="helper\plane.h">
+      <Filter>helper</Filter>
+    </ClInclude>
+    <ClInclude Include="helper\skybox.h">
+      <Filter>helper</Filter>
+    </ClInclude>
+    <ClInclude Include="helper\texture.h">
+      <Filter>helper</Filter>
+    </ClInclude>
+    <ClInclude Include="helper\trianglemesh.h">
+      <Filter>helper</Filter>
+    </ClInclude>
+    <ClInclude Include="helper\utils.h">
+      <Filter>helper</Filter>
+    </ClInclude>
+    <ClInclude Include="helper\torus.h">
+      <Filter>helper</Filter>
+    </ClInclude>
+    <ClInclude Include="helper\frustum.h">
       <Filter>helper</Filter>
     </ClInclude>
   </ItemGroup>
