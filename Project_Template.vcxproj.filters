@@ -89,9 +89,6 @@
     <None Include="shader\shadowVolume\shadowvolume-render.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shader\shadowVolume\shadowvolume-render.geom">
-      <Filter>shaders</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="helper\scene.h">

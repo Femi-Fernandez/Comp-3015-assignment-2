@@ -24,10 +24,11 @@ using glm::mat3;
 SceneBasic_Uniform::SceneBasic_Uniform() : tPrev(0), rotSpeed(0.1f)
                                            //plane(10.0f, 10.0f, 2, 2, 1.0f, 1.0f)
 {
-    spot = ObjMesh::loadWithAdjacency("media/model.obj");
+    
     plane_1 = ObjMesh::loadWithAdjacency("media/plane.obj");
     plane_2 = ObjMesh::loadWithAdjacency("media/plane.obj");
     plane_3 = ObjMesh::loadWithAdjacency("media/plane.obj");
+    spot = ObjMesh::loadWithAdjacency("media/model.obj");
 }
 
 void SceneBasic_Uniform::initScene()
@@ -88,15 +89,15 @@ void SceneBasic_Uniform::initScene()
     renderProg.use();
     renderProg.setUniform("Tex", 2);
     renderProg.setUniform("TexNorm", 4);
-    renderProg.setUniform("EdgeWidth", .01f);
-    renderProg.setUniform("PctExtend", .05f);
-    renderProg.setUniform("LineColor", vec4(1.0, .622, 0, 1.0));
-    renderProg.setUniform("EdgeThreshold", 0.20f);
+    //renderProg.setUniform("EdgeWidth", .01f);
+    //renderProg.setUniform("PctExtend", .05f);
+    //renderProg.setUniform("LineColor", vec4(1.0, .622, 0, 1.0));
+    //renderProg.setUniform("EdgeThreshold", 0.005f);
 
 
     compProg.use();
     compProg.setUniform("DiffSpecTex", 0);
-    compProg.setUniform("EdgeThreshold", 0.20f);
+    compProg.setUniform("EdgeThreshold", 0.05f);
 
     this->animate(true);
 }
@@ -173,13 +174,17 @@ void SceneBasic_Uniform::compile()
 
         //shader for rendering and compositing
         renderProg.compileShader("shader/shadowVolume/shadowvolume-render.vert");
-        renderProg.compileShader("shader/shadowVolume/shadowvolume-render.geom");
+        //renderProg.compileShader("shader/shadowVolume/shadowvolume-render.geom");
         renderProg.compileShader("shader/shadowVolume/shadowvolume-render.frag");
         renderProg.link();
 
         compProg.compileShader("shader/shadowVolume/shadowvolume-comp.vert");
         compProg.compileShader("shader/shadowVolume/shadowvolume-comp.frag");
         compProg.link();
+
+        compProgGround.compileShader("shader/shadowVolume/shadowvolume-comp-Ground.vert");
+        compProgGround.compileShader("shader/shadowVolume/shadowvolume-comp-Ground.frag");
+        compProgGround.link();
     }
     catch (GLSLProgramException& e) {
         cerr << e.what() << endl;
@@ -219,7 +224,6 @@ void SceneBasic_Uniform::render()
     glFlush();
     pass2();
     glFlush();
-
     pass3();
 
 
@@ -293,6 +297,9 @@ void SceneBasic_Uniform::pass3()
 
 
     compProg.use();
+
+    //compProg.setUniform("isItGround", 1);
+
     model = mat4(1.0f);
     projection = model;
     view = model;
@@ -327,6 +334,8 @@ void SceneBasic_Uniform::drawScene(GLSLProgram& prog, bool onlyShadowCasters)
         prog.setUniform("Kd", color);
         prog.setUniform("Ks", vec3(0.9f));
         prog.setUniform("Shininess", 150.0f);
+
+
     }
 
     model = mat4(1.0f);
@@ -343,10 +352,7 @@ void SceneBasic_Uniform::drawScene(GLSLProgram& prog, bool onlyShadowCasters)
         glBindTexture(GL_TEXTURE_2D, brickTex);
         glActiveTexture(GL_TEXTURE4);
         glBindTexture(GL_TEXTURE_2D, brickTexNorm);
-
-           // compProg.use();
-       // prog.setUniform("outlineCol", vec4(1.0f));
-
+        
         color = vec3(0.5f);
         prog.setUniform("Kd", color);
         prog.setUniform("Ks", vec3(0.0f));
@@ -357,6 +363,7 @@ void SceneBasic_Uniform::drawScene(GLSLProgram& prog, bool onlyShadowCasters)
         model = glm::scale(model, vec3(6));
         setMatrices(prog);
         plane_1->render();
+
 
         model = mat4(1.0f);
         model = glm::translate(model, vec3(-5.0f, 5.0f, 0.0f));
@@ -383,6 +390,7 @@ void SceneBasic_Uniform::setMatrices(GLSLProgram& prog)
     mat4 mv = view * model;
     prog.setUniform("ModelViewMatrix", mv);
     prog.setUniform("ProjMatrix", projection);
+
     prog.setUniform("NormalMatrix", 
         glm::mat3( vec3(mv[0]), vec3(mv[1]), vec3(mv[2]) ));
 }
