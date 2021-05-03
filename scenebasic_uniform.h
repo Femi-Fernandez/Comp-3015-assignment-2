@@ -18,8 +18,10 @@ private:
     GLuint colorDepthFBO, fsQuad;
     GLuint bikeTex, bikeTexNorm, brickTex, brickTexNorm;
 
-    Plane plane;
+   // Plane plane;
     std::unique_ptr<ObjMesh> spot;
+    std::unique_ptr<ObjMesh> plane_1, plane_2, plane_3;
+
 
     glm::vec4 lightPos;
 

@@ -166,6 +166,7 @@
     <None Include="shader\shadowVolume\shadowvolume-comp.frag" />
     <None Include="shader\shadowVolume\shadowvolume-comp.vert" />
     <None Include="shader\shadowVolume\shadowvolume-render.frag" />
+    <None Include="shader\shadowVolume\shadowvolume-render.geom" />
     <None Include="shader\shadowVolume\shadowvolume-render.vert" />
   </ItemGroup>
   <ItemGroup>

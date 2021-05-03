@@ -21,10 +21,13 @@ using glm::vec4;
 using glm::mat3;
 
 
-SceneBasic_Uniform::SceneBasic_Uniform() : tPrev(0), rotSpeed(0.1f),
-                                           plane(10.0f, 10.0f, 2, 2, 1.0f, 1.0f)
+SceneBasic_Uniform::SceneBasic_Uniform() : tPrev(0), rotSpeed(0.1f)
+                                           //plane(10.0f, 10.0f, 2, 2, 1.0f, 1.0f)
 {
     spot = ObjMesh::loadWithAdjacency("media/model.obj");
+    plane_1 = ObjMesh::loadWithAdjacency("media/plane.obj");
+    plane_2 = ObjMesh::loadWithAdjacency("media/plane.obj");
+    plane_3 = ObjMesh::loadWithAdjacency("media/plane.obj");
 }
 
 void SceneBasic_Uniform::initScene()
@@ -47,6 +50,13 @@ void SceneBasic_Uniform::initScene()
     //setup VAO for fullscreen quad
     GLfloat verts[] = { -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 
         1.0f, 1.0f, 0.0f, -1.0f, 1.0f, 0.0f };
+
+    GLfloat tc[] = {
+0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f
+    };
+
+
     GLuint bufHandle;
     glGenBuffers(1, &bufHandle);
     glBindBuffer(GL_ARRAY_BUFFER, bufHandle);
@@ -62,6 +72,8 @@ void SceneBasic_Uniform::initScene()
 
     glBindVertexArray(0);
 
+
+
     //load textures
     glActiveTexture(GL_TEXTURE2);
     bikeTex = Texture::loadTexture("media/texture/bikeTex_col.png");
@@ -76,9 +88,15 @@ void SceneBasic_Uniform::initScene()
     renderProg.use();
     renderProg.setUniform("Tex", 2);
     renderProg.setUniform("TexNorm", 4);
+    renderProg.setUniform("EdgeWidth", .01f);
+    renderProg.setUniform("PctExtend", .05f);
+    renderProg.setUniform("LineColor", vec4(1.0, .622, 0, 1.0));
+    renderProg.setUniform("EdgeThreshold", 0.20f);
+
 
     compProg.use();
     compProg.setUniform("DiffSpecTex", 0);
+    compProg.setUniform("EdgeThreshold", 0.20f);
 
     this->animate(true);
 }
@@ -103,6 +121,13 @@ void SceneBasic_Uniform::setupFBO()
     glBindRenderbuffer(GL_RENDERBUFFER, ambBuf);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, width, height);
 
+    //the outline (?) buffer
+   // GLuint outlineBuf;
+   // glGenRenderbuffers(1, &outlineBuf);
+   // glBindRenderbuffer(GL_RENDERBUFFER, outlineBuf);
+   // glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, width, height);
+
+
     //the diffuse + spec component
     glActiveTexture(GL_TEXTURE0);
     GLuint diffSpecTex;
@@ -117,6 +142,7 @@ void SceneBasic_Uniform::setupFBO()
     glBindFramebuffer(GL_FRAMEBUFFER, colorDepthFBO);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuf);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, ambBuf);
+    //glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_RENDERBUFFER, outlineBuf);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, diffSpecTex, 0);
 
     GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
@@ -147,6 +173,7 @@ void SceneBasic_Uniform::compile()
 
         //shader for rendering and compositing
         renderProg.compileShader("shader/shadowVolume/shadowvolume-render.vert");
+        renderProg.compileShader("shader/shadowVolume/shadowvolume-render.geom");
         renderProg.compileShader("shader/shadowVolume/shadowvolume-render.frag");
         renderProg.link();
 
@@ -184,13 +211,18 @@ void SceneBasic_Uniform::update( float t )
    
 }
 
+
+
 void SceneBasic_Uniform::render()
 {
     pass1();
     glFlush();
     pass2();
     glFlush();
+
     pass3();
+
+
 }
 
 void SceneBasic_Uniform::pass1() 
@@ -206,11 +238,14 @@ void SceneBasic_Uniform::pass1()
 
     glBindFramebuffer(GL_FRAMEBUFFER, colorDepthFBO);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+
     drawScene(renderProg, false);
 }
 
 void SceneBasic_Uniform::pass2()
 {
+
     volumeProg.use();
     volumeProg.setUniform("LightPosition", view * lightPos);
 
@@ -256,8 +291,8 @@ void SceneBasic_Uniform::pass3()
     glStencilFunc(GL_EQUAL, 0, 0xffff);
     glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-    compProg.use();
 
+    compProg.use();
     model = mat4(1.0f);
     projection = model;
     view = model;
@@ -267,10 +302,13 @@ void SceneBasic_Uniform::pass3()
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindVertexArray(0);
 
+
+
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
 
 }
+
 
 void SceneBasic_Uniform::drawScene(GLSLProgram& prog, bool onlyShadowCasters) 
 {
@@ -305,6 +343,10 @@ void SceneBasic_Uniform::drawScene(GLSLProgram& prog, bool onlyShadowCasters)
         glBindTexture(GL_TEXTURE_2D, brickTex);
         glActiveTexture(GL_TEXTURE4);
         glBindTexture(GL_TEXTURE_2D, brickTexNorm);
+
+           // compProg.use();
+       // prog.setUniform("outlineCol", vec4(1.0f));
+
         color = vec3(0.5f);
         prog.setUniform("Kd", color);
         prog.setUniform("Ks", vec3(0.0f));
@@ -312,22 +354,25 @@ void SceneBasic_Uniform::drawScene(GLSLProgram& prog, bool onlyShadowCasters)
         prog.setUniform("Shininess", 1.0f);
 
         model = mat4(1.0f);
+        model = glm::scale(model, vec3(6));
         setMatrices(prog);
-        plane.render();
+        plane_1->render();
 
         model = mat4(1.0f);
         model = glm::translate(model, vec3(-5.0f, 5.0f, 0.0f));
         model = glm::rotate(model, glm::radians(90.0f), vec3(1, 0, 0));
         model = glm::rotate(model, glm::radians(-90.0f), vec3(0.0f, 0.0f, 1.0f));
+        model = glm::scale(model, vec3(6));
         setMatrices(prog);
-        plane.render();
+        plane_2->render();
 
 
         model = mat4(1.0f);
         model = glm::translate(model, vec3(0.0f, 5.0f, -5.0f));
         model = glm::rotate(model, glm::radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
+        model = glm::scale(model, vec3(6));
         setMatrices(prog);
-        plane.render();
+        plane_3->render();
 
         model = mat4(1.0f);
     }
