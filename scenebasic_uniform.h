@@ -14,7 +14,7 @@ class SceneBasic_Uniform : public Scene
 {
 private:
     
-    GLSLProgram volumeProg, renderProg, compProg, compProgGround;
+    GLSLProgram volumeProg, renderProg, compProg, shadVol;
     GLuint colorDepthFBO, fsQuad;
     GLuint bikeTex, bikeTexNorm, brickTex, brickTexNorm;
 

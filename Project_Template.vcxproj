@@ -167,6 +167,8 @@
     <None Include="shader\shadowVolume\shadowvolume-comp.vert" />
     <None Include="shader\shadowVolume\shadowvolume-render.frag" />
     <None Include="shader\shadowVolume\shadowvolume-render.vert" />
+    <None Include="shader\shadowVolume\shadowvolume.frag" />
+    <None Include="shader\shadowVolume\shadowvolume.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="helper\aabb.h" />

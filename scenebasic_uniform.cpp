@@ -45,8 +45,10 @@ void SceneBasic_Uniform::initScene()
     //setup framebuffer object
     setupFBO();
 
-    renderProg.use();
-    renderProg.setUniform("LightIntensity", vec3(1.0f));
+    shadVol.use();
+    shadVol.setUniform("LightIntensity", vec3(1.0f));
+    //renderProg.use();
+    //renderProg.setUniform("LightIntensity", vec3(1.0f));
 
     //setup VAO for fullscreen quad
     GLfloat verts[] = { -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 
@@ -86,18 +88,24 @@ void SceneBasic_Uniform::initScene()
 
     updateLight();
 
-    renderProg.use();
-    renderProg.setUniform("Tex", 2);
-    renderProg.setUniform("TexNorm", 4);
+    shadVol.use();
+    shadVol.setUniform("Tex", 2);
+    shadVol.setUniform("TexNorm", 4);
+    //renderProg.use();
+    //renderProg.setUniform("Tex", 2);
+    //renderProg.setUniform("TexNorm", 4);
     //renderProg.setUniform("EdgeWidth", .01f);
     //renderProg.setUniform("PctExtend", .05f);
     //renderProg.setUniform("LineColor", vec4(1.0, .622, 0, 1.0));
     //renderProg.setUniform("EdgeThreshold", 0.005f);
 
 
-    compProg.use();
-    compProg.setUniform("DiffSpecTex", 0);
-    compProg.setUniform("EdgeThreshold", 0.05f);
+    shadVol.use();
+    shadVol.setUniform("DiffSpecTex", 0);
+    shadVol.setUniform("EdgeThreshold", 0.05f);
+    //compProg.use();
+    //compProg.setUniform("DiffSpecTex", 0);
+    //compProg.setUniform("EdgeThreshold", 0.05f);
 
     this->animate(true);
 }
@@ -122,13 +130,6 @@ void SceneBasic_Uniform::setupFBO()
     glBindRenderbuffer(GL_RENDERBUFFER, ambBuf);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, width, height);
 
-    //the outline (?) buffer
-   // GLuint outlineBuf;
-   // glGenRenderbuffers(1, &outlineBuf);
-   // glBindRenderbuffer(GL_RENDERBUFFER, outlineBuf);
-   // glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, width, height);
-
-
     //the diffuse + spec component
     glActiveTexture(GL_TEXTURE0);
     GLuint diffSpecTex;
@@ -143,10 +144,10 @@ void SceneBasic_Uniform::setupFBO()
     glBindFramebuffer(GL_FRAMEBUFFER, colorDepthFBO);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuf);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, ambBuf);
-    //glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_RENDERBUFFER, outlineBuf);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, diffSpecTex, 0);
 
-    GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+
+    GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
     glDrawBuffers(2, drawBuffers);
 
     GLenum result = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -177,14 +178,14 @@ void SceneBasic_Uniform::compile()
         //renderProg.compileShader("shader/shadowVolume/shadowvolume-render.geom");
         renderProg.compileShader("shader/shadowVolume/shadowvolume-render.frag");
         renderProg.link();
-
+        
         compProg.compileShader("shader/shadowVolume/shadowvolume-comp.vert");
         compProg.compileShader("shader/shadowVolume/shadowvolume-comp.frag");
         compProg.link();
 
-        compProgGround.compileShader("shader/shadowVolume/shadowvolume-comp-Ground.vert");
-        compProgGround.compileShader("shader/shadowVolume/shadowvolume-comp-Ground.frag");
-        compProgGround.link();
+        shadVol.compileShader("shader/shadowVolume/shadowvolume.vert");
+        shadVol.compileShader("shader/shadowVolume/shadowvolume.frag");
+        shadVol.link();
     }
     catch (GLSLProgramException& e) {
         cerr << e.what() << endl;
@@ -237,14 +238,17 @@ void SceneBasic_Uniform::pass1()
     projection = glm::infinitePerspective(glm::radians(30.0f), (float)width / height, 0.5f);
     view = glm::lookAt(vec3(5.0f, 5.0f, 5.0f), vec3(0, 2, 0), vec3(0, 1, 0));
 
-    renderProg.use();
-    renderProg.setUniform("LightPosition", view * lightPos);
-
+    shadVol.use();
+    shadVol.setUniform("Pass", 1);
+    shadVol.setUniform("LightPosition", view * lightPos);
+    //renderProg.use();
+    //renderProg.setUniform("LightPosition", view * lightPos);
     glBindFramebuffer(GL_FRAMEBUFFER, colorDepthFBO);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 
-    drawScene(renderProg, false);
+    drawScene(shadVol, false);
+    //drawScene(renderProg, false);
 }
 
 void SceneBasic_Uniform::pass2()
@@ -288,7 +292,6 @@ void SceneBasic_Uniform::pass3()
 {
     glDisable(GL_DEPTH_TEST);
 
-
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
 
@@ -296,15 +299,16 @@ void SceneBasic_Uniform::pass3()
     glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 
-    compProg.use();
-
+    shadVol.use();
+    shadVol.setUniform("pass", 2);
+    //compProg.use();
     //compProg.setUniform("isItGround", 1);
 
     model = mat4(1.0f);
     projection = model;
     view = model;
-    setMatrices(compProg);
-
+    setMatrices(shadVol);
+    //setMatrices(compProg);
     glBindVertexArray(fsQuad);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindVertexArray(0);

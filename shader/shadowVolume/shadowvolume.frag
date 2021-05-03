@@ -2,15 +2,55 @@
 
 in vec3 Position;
 in vec3 Normal;
+in vec2 TexCoord;
+
+uniform vec4 LightPosition;
+uniform vec3 LightIntensity;
+
+uniform sampler2D Tex;
+uniform sampler2D TexNorm;
+
+uniform vec3 Kd;
+uniform vec3 Ka;
+uniform vec3 Ks;
+uniform float Shininess;
+
+
+layout( location = 0 ) out vec4 Ambient;
+layout( location = 1 ) out vec4 DiffSpec;
+
+
+uniform int Pass;
+
+
+void shade(vec3 n)
+{
+
+
+	vec3 s = normalize( vec3(LightPosition) - Position);
+	vec3 v = normalize( vec3(-Position) );
+	vec3 r = reflect( -s, Normal );
+	vec4 texColor = texture(Tex, TexCoord);
+
+	Ambient = vec4( texColor.rgb * LightIntensity * Ka, 1.0);
+	DiffSpec = vec4( texColor.rgb * LightIntensity *
+				   ( Kd * max(dot(s, n), 0.0) + 
+				     Ks * pow( max( dot(r, v), 0.0), Shininess ) ),
+					 1.0);
+	
+}
+
+
+
+
 flat in int isGround;
 
 uniform sampler2D DiffSpecTex;
 
-layout( location = 0 ) out vec4 FragColor;
+layout( location = 2 ) out vec4 FragColor;
 
 uniform float EdgeThreshold;
 const vec3 lum = vec3(0.2126, 0.7152, 0.0722);
-
 
 float luminance( vec3 color )
 {
@@ -39,18 +79,30 @@ vec4 outlineCalc()
 	return vec4(0.0,0.0,0.0,1.0); //no edge
 }
 
+	
+
 
 void main()
-{
+{	
+	if(Pass == 1 ){
+		vec3 norm = texture(TexNorm, TexCoord).xyz;
 
-	vec4 diffSpec = texelFetch(DiffSpecTex, ivec2(gl_FragCoord), 0);
+		norm.xy = 1.0 * norm.xy - 1.0;
 
-	if(isGround == 1)
-	FragColor = vec4(diffSpec.xyz, 1) + outlineCalc();
-	if(isGround != 1)
-	FragColor = vec4(diffSpec.xyz, 1);
-	//
-	//FragColor = vec4(diffSpec.xyz, 1);
-	
+		shade(norm);	
+	}		
+
+	if(Pass == 2)
+	{
+		vec4 diffSpec = texelFetch(DiffSpecTex, ivec2(gl_FragCoord), 0);
+		
+		//if(isGround == 1)
+		//FragColor = vec4(diffSpec.xyz, 1) + outlineCalc();
+		//if(isGround != 1)
+		//FragColor = vec4(diffSpec.xyz, 1);
+		FragColor = vec4(diffSpec.xyz, 1);
+		//
+		//FragColor = vec4(diffSpec.xyz, 1);
+	}
 }
-	
+
