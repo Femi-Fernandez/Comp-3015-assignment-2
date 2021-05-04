@@ -20,7 +20,7 @@ private:
 
    // Plane plane;
     std::unique_ptr<ObjMesh> spot;
-    std::unique_ptr<ObjMesh> plane_1, plane_2, plane_3;
+    std::unique_ptr<ObjMesh> plane_1, plane_2, plane_3, plane_4, plane_5;
 
 
     glm::vec4 lightPos;

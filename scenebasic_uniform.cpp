@@ -28,6 +28,8 @@ SceneBasic_Uniform::SceneBasic_Uniform() : tPrev(0), rotSpeed(0.1f)
     plane_1 = ObjMesh::loadWithAdjacency("media/plane.obj");
     plane_2 = ObjMesh::loadWithAdjacency("media/plane.obj");
     plane_3 = ObjMesh::loadWithAdjacency("media/plane.obj");
+    plane_4 = ObjMesh::loadWithAdjacency("media/plane.obj");
+    plane_5 = ObjMesh::loadWithAdjacency("media/plane.obj");
     spot = ObjMesh::loadWithAdjacency("media/model.obj");
 }
 
@@ -46,7 +48,7 @@ void SceneBasic_Uniform::initScene()
     setupFBO();
 
     shadVol.use();
-    shadVol.setUniform("LightIntensity", vec3(1.0f));
+    shadVol.setUniform("LightIntensity", vec3(.4f));
     //renderProg.use();
     //renderProg.setUniform("LightIntensity", vec3(1.0f));
 
@@ -83,7 +85,7 @@ void SceneBasic_Uniform::initScene()
     bikeTexNorm = Texture::loadTexture("media/texture/download.png");
 
     brickTex = Texture::loadTexture("media/texture/concrete_col.jpg");
-    brickTexNorm = Texture::loadTexture("media/texture/concrete_norm.jpg");
+    brickTexNorm = Texture::loadTexture("media/texture/concrete_norm_flat.jpg");
     //brickTex = Texture::loadTexture("media/spot/spot_texture.png");
 
     updateLight();
@@ -102,7 +104,7 @@ void SceneBasic_Uniform::initScene()
 
     shadVol.use();
     shadVol.setUniform("DiffSpecTex", 0);
-    shadVol.setUniform("EdgeThreshold", 0.05f);
+    shadVol.setUniform("EdgeThreshold", 0.1f);
     //compProg.use();
     //compProg.setUniform("DiffSpecTex", 0);
     //compProg.setUniform("EdgeThreshold", 0.05f);
@@ -112,7 +114,7 @@ void SceneBasic_Uniform::initScene()
 
 void SceneBasic_Uniform::updateLight() 
 {
-    lightPos = vec4(5.0f * vec3(cosf(angle) * 7.5f, 1.5f, sinf(angle) * 7.5f), 1.0f);
+    lightPos = vec4(5.0f * vec3(cosf(angle) * 40.5f, 1.5f, sinf(angle) * 7.5f), 1.0f);
 }
 
 
@@ -194,6 +196,11 @@ void SceneBasic_Uniform::compile()
 }
 
 
+float lineBrightNess;
+bool valInc = true;
+bool valDec = false;
+float ColChangeTime = .5f;
+float CurTime = 0;
 void SceneBasic_Uniform::update( float t )
 {
 	//update your angle here
@@ -214,7 +221,25 @@ void SceneBasic_Uniform::update( float t )
 
         updateLight();
     }
-   
+    if (valInc)
+    {
+        CurTime += deltaT;
+        if (CurTime >= ColChangeTime)
+        {
+            valDec = true;
+            valInc = false;        
+        }
+    }
+
+    if (valDec)
+    {
+        CurTime -= deltaT;
+        if (CurTime <= 0)
+        {
+            valInc = true;
+            valDec = false;
+        }
+    }
 }
 
 
@@ -227,8 +252,8 @@ void SceneBasic_Uniform::render()
     glFlush();
     pass3();
 
-
 }
+
 
 void SceneBasic_Uniform::pass1() 
 {
@@ -236,7 +261,8 @@ void SceneBasic_Uniform::pass1()
     glDisable(GL_STENCIL_TEST);
     glEnable(GL_DEPTH_TEST);
     projection = glm::infinitePerspective(glm::radians(30.0f), (float)width / height, 0.5f);
-    view = glm::lookAt(vec3(5.0f, 5.0f, 5.0f), vec3(0, 2, 0), vec3(0, 1, 0));
+    //view = glm::lookAt(vec3(5.0f, 5.0f, 5.0f), vec3(0, 2, 0), vec3(0, 1, 0));
+    view = glm::lookAt(vec3(7.0f * cos(angle), 2.0f, 7.0f * sin(angle)), vec3(0, 2, 0), vec3(0, 1, 0));
 
     shadVol.use();
     shadVol.setUniform("Pass", 1);
@@ -287,20 +313,25 @@ void SceneBasic_Uniform::pass2()
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE );
 }
 
-
 void SceneBasic_Uniform::pass3() 
 {
+    //dont need depth test
     glDisable(GL_DEPTH_TEST);
 
+    //just want sum of ambient and diffuse + spec
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
 
+
+    //only render stancil pixels
     glStencilFunc(GL_EQUAL, 0, 0xffff);
     glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 
     shadVol.use();
-    shadVol.setUniform("pass", 2);
+    shadVol.setUniform("Pass", 2);
+    shadVol.setUniform("LineColor", vec4(1.0* (CurTime / 0.5f), .622* (CurTime / 0.5f), 0, 0));
+
     //compProg.use();
     //compProg.setUniform("isItGround", 1);
 
@@ -312,8 +343,6 @@ void SceneBasic_Uniform::pass3()
     glBindVertexArray(fsQuad);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindVertexArray(0);
-
-
 
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
@@ -339,6 +368,7 @@ void SceneBasic_Uniform::drawScene(GLSLProgram& prog, bool onlyShadowCasters)
         prog.setUniform("Ks", vec3(0.9f));
         prog.setUniform("Shininess", 150.0f);
 
+        prog.setUniform("isItGround", 1);
 
     }
 
@@ -363,31 +393,48 @@ void SceneBasic_Uniform::drawScene(GLSLProgram& prog, bool onlyShadowCasters)
         prog.setUniform("Ka", vec3(0.1f));
         prog.setUniform("Shininess", 1.0f);
 
+        //prog.setUniform("isItGround", 0);
         model = mat4(1.0f);
-        model = glm::scale(model, vec3(6));
+        model = glm::scale(model, vec3(10));
         setMatrices(prog);
         plane_1->render();
 
 
         model = mat4(1.0f);
-        model = glm::translate(model, vec3(-5.0f, 5.0f, 0.0f));
+        model = glm::translate(model, vec3(-10, 10, 0));
         model = glm::rotate(model, glm::radians(90.0f), vec3(1, 0, 0));
-        model = glm::rotate(model, glm::radians(-90.0f), vec3(0.0f, 0.0f, 1.0f));
-        model = glm::scale(model, vec3(6));
+        model = glm::rotate(model, glm::radians(-90.0f), vec3(0, 0, 1));
+        model = glm::scale(model, vec3(10));
         setMatrices(prog);
         plane_2->render();
-
-
+        
+        
         model = mat4(1.0f);
-        model = glm::translate(model, vec3(0.0f, 5.0f, -5.0f));
-        model = glm::rotate(model, glm::radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
-        model = glm::scale(model, vec3(6));
+        model = glm::translate(model, vec3(0, 10, -10));
+        model = glm::rotate(model, glm::radians(90.0f), vec3(1, 0, 0));
+        model = glm::scale(model, vec3(10));
         setMatrices(prog);
         plane_3->render();
 
         model = mat4(1.0f);
+        model = glm::translate(model, vec3(0, 0, 10));
+        model = glm::rotate(model, glm::radians(-90.0f), vec3(1, 0, 0));
+        model = glm::scale(model, vec3(10));
+        setMatrices(prog);
+        plane_4->render();
+
+        model = mat4(1.0f);
+        model = glm::translate(model, vec3(10, 0, 0));
+        model = glm::rotate(model, glm::radians(90.0f), vec3(0, 0, 1));
+        model = glm::scale(model, vec3(10));
+        setMatrices(prog);
+        plane_5->render();
+
+        model = mat4(1.0f);
     }
 }
+
+
 
 void SceneBasic_Uniform::setMatrices(GLSLProgram& prog)
 {
