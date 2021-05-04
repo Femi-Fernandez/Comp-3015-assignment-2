@@ -163,12 +163,10 @@
     <None Include="shader\basic_uniform.frag" />
     <None Include="shader\basic_uniform.geom" />
     <None Include="shader\basic_uniform.vert" />
-    <None Include="shader\shadowVolume\shadowvolume-comp.frag" />
-    <None Include="shader\shadowVolume\shadowvolume-comp.vert" />
-    <None Include="shader\shadowVolume\shadowvolume-render.frag" />
-    <None Include="shader\shadowVolume\shadowvolume-render.vert" />
     <None Include="shader\shadowVolume\shadowvolume.frag" />
     <None Include="shader\shadowVolume\shadowvolume.vert" />
+    <None Include="shader\smoke.frag" />
+    <None Include="shader\smoke.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="helper\aabb.h" />
@@ -177,7 +175,9 @@
     <ClInclude Include="helper\glslprogram.h" />
     <ClInclude Include="helper\glutils.h" />
     <ClInclude Include="helper\objmesh.h" />
+    <ClInclude Include="helper\particleutils.h" />
     <ClInclude Include="helper\plane.h" />
+    <ClInclude Include="helper\random.h" />
     <ClInclude Include="helper\scene.h" />
     <ClInclude Include="helper\scenerunner.h" />
     <ClInclude Include="helper\skybox.h" />

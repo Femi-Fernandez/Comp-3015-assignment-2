@@ -77,22 +77,16 @@
     <None Include="shader\basic_uniform.geom">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shader\shadowVolume\shadowvolume-comp.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="shader\shadowVolume\shadowvolume-comp.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="shader\shadowVolume\shadowvolume-render.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="shader\shadowVolume\shadowvolume-render.vert">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shader\shadowVolume\shadowvolume.frag">
       <Filter>shaders</Filter>
     </None>
     <None Include="shader\shadowVolume\shadowvolume.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shader\smoke.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shader\smoke.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>
@@ -146,6 +140,12 @@
       <Filter>helper</Filter>
     </ClInclude>
     <ClInclude Include="helper\frustum.h">
+      <Filter>helper</Filter>
+    </ClInclude>
+    <ClInclude Include="helper\random.h">
+      <Filter>helper</Filter>
+    </ClInclude>
+    <ClInclude Include="helper\particleutils.h">
       <Filter>helper</Filter>
     </ClInclude>
   </ItemGroup>

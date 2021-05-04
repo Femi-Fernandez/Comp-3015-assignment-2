@@ -9,23 +9,45 @@
 #include "helper/Objmesh.h"
 #include "helper/torus.h"
 #include "helper/plane.h"
-#include "helper/frustum.h"
+#include "helper/random.h"
+//#include "helper/frustum.h"
+
 class SceneBasic_Uniform : public Scene
 {
 private:
     
-    GLSLProgram volumeProg, renderProg, compProg, shadVol;
+    //bike & ground
+    GLSLProgram volumeProg, shadVol;
     GLuint colorDepthFBO, fsQuad;
-    GLuint bikeTex, bikeTexNorm, brickTex, brickTexNorm;
+    GLuint bikeTex, bikeTexNorm, brickTex, brickTexNorm, smokeTex;
 
-   // Plane plane;
-    std::unique_ptr<ObjMesh> spot;
+    std::unique_ptr<ObjMesh> bike;
     std::unique_ptr<ObjMesh> plane_1, plane_2, plane_3, plane_4, plane_5;
 
 
     glm::vec4 lightPos;
 
     float angle, tPrev, rotSpeed;
+
+
+    //smoke 
+    GLSLProgram smokeProg;
+    Random rand;
+    GLuint  posBuf[2], velBuf[2], age[2], particleArray[2], feedback[2];
+
+    GLuint drawBuf;
+
+    glm::vec3 emitterPos, emitterDir;
+    float smokeAngle, smoketime, particleLifetime;
+    int nParticles;
+
+    float smokeTime, delaT;
+
+    void initSmokeBuffers();
+    void renderSmoke();
+    //void randFloat();
+
+
 
     void setMatrices(GLSLProgram &);
 
