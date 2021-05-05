@@ -19,7 +19,7 @@ private:
     //bike & ground
     GLSLProgram volumeProg, shadVol;
     GLuint colorDepthFBO, fsQuad;
-    GLuint bikeTex, bikeTexNorm, brickTex, brickTexNorm, smokeTex;
+    GLuint bikeTex, bikeTexNorm, brickTex, brickTexNorm, smokeTex, smokePart;
 
     std::unique_ptr<ObjMesh> bike;
     std::unique_ptr<ObjMesh> plane_1, plane_2, plane_3, plane_4, plane_5;
@@ -38,10 +38,10 @@ private:
     GLuint drawBuf;
 
     glm::vec3 emitterPos, emitterDir;
-    float smokeAngle, smoketime, particleLifetime;
+    float particleLifetime;
     int nParticles;
 
-    float smokeTime, delaT;
+    float time, deltaT;
 
     void initSmokeBuffers();
     void renderSmoke();

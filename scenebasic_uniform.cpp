@@ -22,8 +22,8 @@ using glm::mat3;
 
 
 SceneBasic_Uniform::SceneBasic_Uniform() : tPrev(0), rotSpeed(0.1f)
-                                            ,smoketime(0), drawBuf(1), particleLifetime(5.5f), nParticles(4000)
-                                            , emitterPos(1,0,0), emitterDir(-1, 2, 0)
+                                            , time(0), deltaT(0), drawBuf(1), particleLifetime(5.5f), nParticles(4000)
+                                            , emitterPos(1,1,0), emitterDir(-1, 2, 0)
                                            //plane(10.0f, 10.0f, 2, 2, 1.0f, 1.0f)
 {
     
@@ -39,7 +39,7 @@ void SceneBasic_Uniform::initScene()
 {
     compile();
 
-    glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClearStencil(0);
 
     glEnable(GL_BLEND);
@@ -51,7 +51,7 @@ void SceneBasic_Uniform::initScene()
 
     //setup framebuffer object
     setupFBO();
-    initSmokeBuffers();
+
     //setupFBO();
 
     shadVol.use();
@@ -77,14 +77,16 @@ void SceneBasic_Uniform::initScene()
 
 
     //set smoke shader vars
-    glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE5);
     smokeTex = Texture::loadTexture("media/smoke.png");
-    glActiveTexture(GL_TEXTURE1);
-    ParticleUtils::createRandomTex1D(nParticles * 3);
+    glActiveTexture(GL_TEXTURE6);
+    smokePart =  ParticleUtils::createRandomTex1D(nParticles * 3);
+
+    initSmokeBuffers();
 
     smokeProg.use();
-    smokeProg.setUniform("RandomTex", 1);
-    smokeProg.setUniform("ParticleTex", 0);
+    smokeProg.setUniform("RandomTex", 6);
+    smokeProg.setUniform("ParticleTex",5);
     smokeProg.setUniform("ParticleLifetime", particleLifetime);
     smokeProg.setUniform("Accel", vec3(0, -.5, 0));
     smokeProg.setUniform("ParticleSize", 0.05f);
@@ -173,7 +175,7 @@ void SceneBasic_Uniform::setupFBO()
 
 void  SceneBasic_Uniform::initSmokeBuffers() 
 {
-    glEnable(GL_TRANSFORM_FEEDBACK);
+
     glGenBuffers(2, posBuf);
     glGenBuffers(2, velBuf);
     glGenBuffers(2, age);
@@ -295,14 +297,15 @@ float CurTime = 0;
 void SceneBasic_Uniform::update( float t )
 {
 	//update your angle here
-    float deltaT = t - tPrev;
+    deltaT = t - tPrev;
+    
     if (tPrev == 0.0f)
     {
         deltaT = 0.0f;
     }
     
     tPrev = t;
-    
+    time = tPrev;
     if (animating())
     {
         angle += 0.2 * deltaT;
@@ -331,6 +334,7 @@ void SceneBasic_Uniform::update( float t )
             valDec = false;
         }
     }
+    
 }
 
 
@@ -349,20 +353,20 @@ void SceneBasic_Uniform::render()
 }
 void SceneBasic_Uniform::renderSmoke() 
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-   // glActiveTexture(GL_TEXTURE2);
-   // glBindTexture(GL_TEXTURE_2D, smokeTex);
-   //
-    glEnable(GL_TRANSFORM_FEEDBACK);
     smokeProg.use();
-    smokeProg.setUniform("Time", smoketime);
-    smokeProg.setUniform("DeltaT", delaT);
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_2D, smokeTex);
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_1D, smokePart);
+
+    smokeProg.setUniform("Time", time);
+    smokeProg.setUniform("DeltaT", deltaT);
 
     // Update pass
     smokeProg.setUniform("pass", 1);
 
     glEnable(GL_RASTERIZER_DISCARD);
-    //glEnable(GL_TRANSFORM_FEEDBACK);
 
     glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, feedback[drawBuf]);
     glBeginTransformFeedback(GL_POINTS);
@@ -514,7 +518,7 @@ void SceneBasic_Uniform::drawScene(GLSLProgram& prog, bool onlyShadowCasters)
     model = mat4(1.0f);
     //model = glm::translate(model, vec3(-2.3f, 1.0f, 0.2f));
     model = glm::rotate(model, glm::radians(180.0f), vec3(0.0f, 1.0f, 0.0f));
-    model = glm::scale(model, vec3(1.0f));
+    model = glm::scale(model, vec3(.10f));
     setMatrices(prog);
     bike->render();
 
