@@ -89,6 +89,12 @@
     <None Include="shader\smoke.vert">
       <Filter>shaders</Filter>
     </None>
+    <None Include="shader\concrete.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shader\concrete.vert">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="helper\scene.h">

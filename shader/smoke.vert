@@ -22,6 +22,7 @@ uniform vec3 Emitter = vec3(0);
 uniform mat3 EmitterBasis;
 uniform float ParticleSize;
 
+
 uniform mat4 ModelViewMatrix;
 uniform mat4 ProjMatrix;
 

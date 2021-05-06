@@ -17,7 +17,7 @@ class SceneBasic_Uniform : public Scene
 private:
     
     //bike & ground
-    GLSLProgram volumeProg, shadVol;
+    GLSLProgram volumeProg, shadVol, concProg;
     GLuint colorDepthFBO, fsQuad;
     GLuint bikeTex, bikeTexNorm, brickTex, brickTexNorm, smokeTex, smokePart;
 
@@ -27,8 +27,8 @@ private:
 
     glm::vec4 lightPos;
 
-    float angle, tPrev, rotSpeed;
-
+    float angle, angleCount,  tPrev, rotSpeed;
+    int lightingType;
 
     //smoke 
     GLSLProgram smokeProg;
@@ -42,11 +42,11 @@ private:
     int nParticles;
 
     float time, deltaT;
-
+    bool concClear;
     void initSmokeBuffers();
     void renderSmoke();
     //void randFloat();
-
+    void renderConc();
 
 
     void setMatrices(GLSLProgram &);

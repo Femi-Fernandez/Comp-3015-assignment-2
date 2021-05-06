@@ -22,8 +22,9 @@ using glm::mat3;
 
 
 SceneBasic_Uniform::SceneBasic_Uniform() : tPrev(0), rotSpeed(0.1f)
-                                            , time(0), deltaT(0), drawBuf(1), particleLifetime(3.0f), nParticles(4000)
-                                            , emitterPos(1,1,0), emitterDir(-1, 2, 0)
+, time(0), deltaT(0), drawBuf(1), particleLifetime(3.0f), nParticles(4000)
+, emitterPos(1, 1, 0), emitterDir(-1, 2, 0)
+, lightingType(2)
                                            //plane(10.0f, 10.0f, 2, 2, 1.0f, 1.0f)
 {
     
@@ -74,14 +75,20 @@ void SceneBasic_Uniform::initScene()
     shadVol.setUniform("DiffSpecTex", 0);
     shadVol.setUniform("EdgeThreshold", 0.1f);
 
+    concProg.use();
+    concProg.setUniform("Tex", 2);
+    concProg.setUniform("TexNorm", 4);
+    concProg.setUniform("DiffSpecTex", 0);
+    
+
 
     //set smoke shader vars
     glActiveTexture(GL_TEXTURE5);
-    Texture::loadTexture("media/smoke.png");
-    //smokeTex = Texture::loadTexture("media/smoke.png");
+    //Texture::loadTexture("media/smoke.png");
+    smokeTex = Texture::loadTexture("media/smoke.png");
     glActiveTexture(GL_TEXTURE6);
-    ParticleUtils::createRandomTex1D(nParticles * 3);
-    //smokePart =  ParticleUtils::createRandomTex1D(nParticles * 3);
+    //ParticleUtils::createRandomTex1D(nParticles * 3);
+    smokePart =  ParticleUtils::createRandomTex1D(nParticles * 3);
 
     initSmokeBuffers();
 
@@ -90,7 +97,7 @@ void SceneBasic_Uniform::initScene()
     smokeProg.setUniform("ParticleTex",5);
     smokeProg.setUniform("ParticleLifetime", particleLifetime);
     smokeProg.setUniform("Accel", vec3(0, -.5, 0));
-    smokeProg.setUniform("ParticleSize", 0.05f);
+    smokeProg.setUniform("ParticleSize", 0.5f);
     smokeProg.setUniform("Emitter", emitterPos);
     smokeProg.setUniform("EmitterBasis", ParticleUtils::makeArbitraryBasis(emitterDir));
     this->animate(true);
@@ -275,7 +282,9 @@ void SceneBasic_Uniform::compile()
         shadVol.compileShader("shader/shadowVolume/shadowvolume.frag");
         shadVol.link();
 
-        
+        concProg.compileShader("shader/concrete.vert");
+        concProg.compileShader("shader/concrete.frag");
+        concProg.link();
 
         smokeProg.compileShader("shader/smoke.vert");
         smokeProg.compileShader("shader/smoke.frag");
@@ -312,10 +321,23 @@ void SceneBasic_Uniform::update( float t )
     time = tPrev;
     if (animating())
     {
-        angle += 0.2 * deltaT;
+        // 0.2 *
+        angle +=  deltaT;
+        if (lightingType== 1)
+        {
 
-        if (angle > glm::two_pi<float>())
+        }
+        if (angle > glm::two_pi<float>()) 
+        {
             angle -= glm::two_pi<float>();
+            lightingType++;
+            if (lightingType > 2)
+            {
+                //glDetachShader(shadVol);
+                lightingType = 1;
+            }
+        }
+            
 
         updateLight();
     }
@@ -341,31 +363,60 @@ void SceneBasic_Uniform::update( float t )
     
 }
 
-
+int lightingType;
 
 void SceneBasic_Uniform::render()
 {
-    renderSmoke();
-    glFlush();
-    pass1();
-    glFlush();
-    //pass2();
+    //renderSmoke();
     //glFlush();
-    //pass3();
-    //glFlush();
-
+    
+    if (lightingType == 2)
+    {
+        glFlush();
+        pass1();
+        glFlush();
+        pass2();
+        glFlush();
+        pass3();
+        glFlush();
+    }
+    if (lightingType == 1)
+    {
+        glFlush();
+        renderConc();
+        glFlush();
+        renderSmoke();
+        glFlush();
+    }
 }
 void SceneBasic_Uniform::renderSmoke() 
 {
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+   
+    
     smokeProg.use();
+    glDisable(GL_STENCIL_TEST);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glEnable(GL_DEPTH_TEST);
+
+
+    glActiveTexture(GL_TEXTURE5);
+    //glBindTexture(GL_TEXTURE_2D, smokeTex);
+
+    glActiveTexture(GL_TEXTURE6);
+    //glBindTexture(GL_TEXTURE_1D, smokePart);
+
+    smokeProg.setUniform("RandomTex", 6);
+    smokeProg.setUniform("ParticleTex", 5);
+
     smokeProg.setUniform("Time", time);
     smokeProg.setUniform("DeltaT", deltaT);
 
     // Update pass
     smokeProg.setUniform("pass", 1);
-
+    glEnable(GL_BLEND);
     glEnable(GL_RASTERIZER_DISCARD);
 
     glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, feedback[drawBuf]);
@@ -382,6 +433,9 @@ void SceneBasic_Uniform::renderSmoke()
     glDisable(GL_RASTERIZER_DISCARD);
     // Render pass
     smokeProg.setUniform("pass", 2);
+    model = mat4(1.0f);
+    //model = glm::scale(model, vec3(5));
+    projection = glm::perspective(glm::radians(60.0f), (float)width / height, 0.3f, 100.0f);
     view = glm::lookAt(vec3(7.0f * cos(angle), 2.0f, 7.0f * sin(angle)), vec3(0, 2, 0), vec3(0, 1, 0));
     setMatrices(smokeProg);
 
@@ -403,7 +457,7 @@ void SceneBasic_Uniform::pass1()
     glDepthMask(GL_TRUE);
     glDisable(GL_STENCIL_TEST);
     glEnable(GL_DEPTH_TEST);
-    //projection = glm::infinitePerspective(glm::radians(30.0f), (float)width / height, 0.5f);
+    projection = glm::infinitePerspective(glm::radians(30.0f), (float)width / height, 0.5f);
     //view = glm::lookAt(vec3(5.0f, 5.0f, 5.0f), vec3(0, 2, 0), vec3(0, 1, 0));
     view = glm::lookAt(vec3(7.0f * cos(angle), 2.0f, 7.0f * sin(angle)), vec3(0, 2, 0), vec3(0, 1, 0));
 
@@ -412,7 +466,7 @@ void SceneBasic_Uniform::pass1()
     shadVol.setUniform("LightPosition", view * lightPos);
 
     glBindFramebuffer(GL_FRAMEBUFFER, colorDepthFBO);
-    //glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 
     drawScene(shadVol, false);
@@ -487,7 +541,6 @@ void SceneBasic_Uniform::pass3()
 
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
-
 }
 
 
@@ -516,7 +569,7 @@ void SceneBasic_Uniform::drawScene(GLSLProgram& prog, bool onlyShadowCasters)
     model = mat4(1.0f);
     //model = glm::translate(model, vec3(-2.3f, 1.0f, 0.2f));
     model = glm::rotate(model, glm::radians(180.0f), vec3(0.0f, 1.0f, 0.0f));
-    model = glm::scale(model, vec3(.10f));
+    model = glm::scale(model, vec3(1.0f));
     setMatrices(prog);
     bike->render();
 
@@ -575,7 +628,64 @@ void SceneBasic_Uniform::drawScene(GLSLProgram& prog, bool onlyShadowCasters)
     }
 }
 
+void SceneBasic_Uniform::renderConc() 
+{
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    concProg.use();
+    glActiveTexture(GL_TEXTURE2);
+    //glBindTexture(GL_TEXTURE_2D, brickTex);
+    glActiveTexture(GL_TEXTURE4);
+    //glBindTexture(GL_TEXTURE_2D, brickTexNorm);
+
+    vec3 color = vec3(0.5f);
+    concProg.setUniform("LightPosition", view * lightPos);
+    concProg.setUniform("LightIntensity", vec3(.4f));
+
+    concProg.setUniform("Kd", color);
+    concProg.setUniform("Ks", vec3(0.0f));
+    concProg.setUniform("Ka", vec3(0.1f));
+    concProg.setUniform("Shininess", 1.0f);
+
+    //prog.setUniform("isItGround", 0);
+    model = mat4(1.0f);
+    model = glm::scale(model, vec3(10));
+    setMatrices(concProg);
+    plane_1->render();
+
+
+    model = mat4(1.0f);
+    model = glm::translate(model, vec3(-10, 10, 0));
+    model = glm::rotate(model, glm::radians(90.0f), vec3(1, 0, 0));
+    model = glm::rotate(model, glm::radians(-90.0f), vec3(0, 0, 1));
+    model = glm::scale(model, vec3(10));
+    setMatrices(concProg);
+    plane_2->render();
+
+
+    model = mat4(1.0f);
+    model = glm::translate(model, vec3(0, 10, -10));
+    model = glm::rotate(model, glm::radians(90.0f), vec3(1, 0, 0));
+    model = glm::scale(model, vec3(10));
+    setMatrices(concProg);
+    plane_3->render();
+
+    model = mat4(1.0f);
+    model = glm::translate(model, vec3(0, 0, 10));
+    model = glm::rotate(model, glm::radians(-90.0f), vec3(1, 0, 0));
+    model = glm::scale(model, vec3(10));
+    setMatrices(concProg);
+    plane_4->render();
+
+    model = mat4(1.0f);
+    model = glm::translate(model, vec3(10, 0, 0));
+    model = glm::rotate(model, glm::radians(90.0f), vec3(0, 0, 1));
+    model = glm::scale(model, vec3(10));
+    setMatrices(concProg);
+    plane_5->render();
+
+    model = mat4(1.0f);
+}
 
 void SceneBasic_Uniform::setMatrices(GLSLProgram& prog)
 {
