@@ -49,7 +49,8 @@ vec3 randomInitialVel()
 vec3 randomInitialPosition()
 {
     float offset = mix(-2.0f, 2.0f, texelFetch(RandomTex, 2* gl_VertexID + 1, 0).r);
-    return Emitter + vec3(offset, 0,0);
+    //return Emitter + vec3(offset, 0,0);
+    return Emitter + vec3(0, 0,0);
 }
 
 void update()

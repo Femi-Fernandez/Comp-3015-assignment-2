@@ -22,7 +22,7 @@ using glm::mat3;
 
 
 SceneBasic_Uniform::SceneBasic_Uniform() : tPrev(0), rotSpeed(0.1f)
-                                            , time(0), deltaT(0), drawBuf(1), particleLifetime(5.5f), nParticles(4000)
+                                            , time(0), deltaT(0), drawBuf(1), particleLifetime(3.0f), nParticles(4000)
                                             , emitterPos(1,1,0), emitterDir(-1, 2, 0)
                                            //plane(10.0f, 10.0f, 2, 2, 1.0f, 1.0f)
 {
@@ -52,7 +52,6 @@ void SceneBasic_Uniform::initScene()
     //setup framebuffer object
     setupFBO();
 
-    //setupFBO();
 
     shadVol.use();
     shadVol.setUniform("LightIntensity", vec3(.4f));
@@ -78,9 +77,11 @@ void SceneBasic_Uniform::initScene()
 
     //set smoke shader vars
     glActiveTexture(GL_TEXTURE5);
-    smokeTex = Texture::loadTexture("media/smoke.png");
+    Texture::loadTexture("media/smoke.png");
+    //smokeTex = Texture::loadTexture("media/smoke.png");
     glActiveTexture(GL_TEXTURE6);
-    smokePart =  ParticleUtils::createRandomTex1D(nParticles * 3);
+    ParticleUtils::createRandomTex1D(nParticles * 3);
+    //smokePart =  ParticleUtils::createRandomTex1D(nParticles * 3);
 
     initSmokeBuffers();
 
@@ -274,12 +275,15 @@ void SceneBasic_Uniform::compile()
         shadVol.compileShader("shader/shadowVolume/shadowvolume.frag");
         shadVol.link();
 
+        
+
+        smokeProg.compileShader("shader/smoke.vert");
+        smokeProg.compileShader("shader/smoke.frag");
+
         GLuint progHandle = smokeProg.getHandle();
         const char* outputNames[] = { "Position", "Velocity", "Age" };
         glTransformFeedbackVaryings(progHandle, 3, outputNames, GL_SEPARATE_ATTRIBS);
 
-        smokeProg.compileShader("shader/smoke.vert");
-        smokeProg.compileShader("shader/smoke.frag");
         smokeProg.link();
     }
     catch (GLSLProgramException& e) {
@@ -345,21 +349,17 @@ void SceneBasic_Uniform::render()
     glFlush();
     pass1();
     glFlush();
-    pass2();
-    glFlush();
-    pass3();
-    glFlush();
+    //pass2();
+    //glFlush();
+    //pass3();
+    //glFlush();
 
 }
 void SceneBasic_Uniform::renderSmoke() 
 {
-    smokeProg.use();
-    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glActiveTexture(GL_TEXTURE5);
-    glBindTexture(GL_TEXTURE_2D, smokeTex);
-    glActiveTexture(GL_TEXTURE6);
-    glBindTexture(GL_TEXTURE_1D, smokePart);
 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    smokeProg.use();
     smokeProg.setUniform("Time", time);
     smokeProg.setUniform("DeltaT", deltaT);
 
@@ -403,21 +403,19 @@ void SceneBasic_Uniform::pass1()
     glDepthMask(GL_TRUE);
     glDisable(GL_STENCIL_TEST);
     glEnable(GL_DEPTH_TEST);
-    projection = glm::infinitePerspective(glm::radians(30.0f), (float)width / height, 0.5f);
+    //projection = glm::infinitePerspective(glm::radians(30.0f), (float)width / height, 0.5f);
     //view = glm::lookAt(vec3(5.0f, 5.0f, 5.0f), vec3(0, 2, 0), vec3(0, 1, 0));
     view = glm::lookAt(vec3(7.0f * cos(angle), 2.0f, 7.0f * sin(angle)), vec3(0, 2, 0), vec3(0, 1, 0));
 
     shadVol.use();
     shadVol.setUniform("Pass", 1);
     shadVol.setUniform("LightPosition", view * lightPos);
-    //renderProg.use();
-    //renderProg.setUniform("LightPosition", view * lightPos);
+
     glBindFramebuffer(GL_FRAMEBUFFER, colorDepthFBO);
-    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    //glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 
     drawScene(shadVol, false);
-    //drawScene(renderProg, false);
 }
 
 void SceneBasic_Uniform::pass2()
@@ -594,4 +592,5 @@ void SceneBasic_Uniform::resize(int w, int h)
     glViewport(0, 0, w, h);
     width = w;
     height = h;
+    projection = glm::perspective(glm::radians(60.0f), (float)w / h, 0.3f, 100.0f);
 }
