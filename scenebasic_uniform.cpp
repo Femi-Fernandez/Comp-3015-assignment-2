@@ -22,9 +22,9 @@ using glm::mat3;
 
 
 SceneBasic_Uniform::SceneBasic_Uniform() : tPrev(0), rotSpeed(0.1f)
-, time(0), deltaT(0), drawBuf(1), particleLifetime(3.0f), nParticles(4000)
-, emitterPos(1, 1, 0), emitterDir(-1, 2, 0)
-, lightingType(2)
+, time(0), deltaT(0), drawBuf(1), particleLifetime(3), nParticles(4000)
+, emitterPos(0.5f, 0.3f, -0.5f), emitterDir(-90, 0, 10)
+, lightingType(1)
                                            //plane(10.0f, 10.0f, 2, 2, 1.0f, 1.0f)
 {
     
@@ -49,7 +49,7 @@ void SceneBasic_Uniform::initScene()
     glEnable(GL_DEPTH_TEST);
 
     angle = 0.0f;
-
+    angleCount = 0.0f;
     //setup framebuffer object
     setupFBO();
 
@@ -96,16 +96,17 @@ void SceneBasic_Uniform::initScene()
     smokeProg.setUniform("RandomTex", 6);
     smokeProg.setUniform("ParticleTex",5);
     smokeProg.setUniform("ParticleLifetime", particleLifetime);
-    smokeProg.setUniform("Accel", vec3(0, -.5, 0));
+    smokeProg.setUniform("Accel", vec3(0, .5, 0));
     smokeProg.setUniform("ParticleSize", 0.5f);
     smokeProg.setUniform("Emitter", emitterPos);
     smokeProg.setUniform("EmitterBasis", ParticleUtils::makeArbitraryBasis(emitterDir));
+   // angle = glm::pi<float>() - 0.1;
     this->animate(true);
 }
 
 void SceneBasic_Uniform::updateLight() 
 {
-    lightPos = vec4(5.0f * vec3(cosf(angle) * 40.5f, 1.5f, sinf(angle) * 7.5f), 1.0f);
+    lightPos = vec4(5.0f * vec3(cosf(angle) * 5.5f, 1.5f, sinf(angle) * 7.5f), 1.0f);
 }
 
 
@@ -307,9 +308,12 @@ bool valInc = true;
 bool valDec = false;
 float ColChangeTime = .5f;
 float CurTime = 0;
+
+float particalWaitTime=0;
+float particalWaitTimeMax = 0.1f;
+bool setupParticals = false;
 void SceneBasic_Uniform::update( float t )
 {
-	//update your angle here
     deltaT = t - tPrev;
     
     if (tPrev == 0.0f)
@@ -323,18 +327,25 @@ void SceneBasic_Uniform::update( float t )
     {
         // 0.2 *
         angle +=  deltaT;
-        if (lightingType== 1)
+        angleCount = 1;
+        if (lightingType== 2)
         {
-
+          //  angleCount += deltaT;
+            
         }
-        if (angle > glm::two_pi<float>()) 
+        if (angle > glm::pi<float>()) 
         {
-            angle -= glm::two_pi<float>();
+            angle -= glm::pi<float>();
             lightingType++;
             if (lightingType > 2)
             {
                 //glDetachShader(shadVol);
                 lightingType = 1;
+                glColorMask(true, true, true, true);//This ensures that only alpha will be effected
+                glClearColor(0, 0, 0, 0);//alphaValue - Value to which you need to clear
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                glClearStencil(0);
+               // glClearBufferData(GL_FRAMEBUFFER, colorDepthFBO);
             }
         }
             
@@ -360,7 +371,7 @@ void SceneBasic_Uniform::update( float t )
             valDec = false;
         }
     }
-    
+    lightingType = 1;
 }
 
 int lightingType;
@@ -369,10 +380,9 @@ void SceneBasic_Uniform::render()
 {
     //renderSmoke();
     //glFlush();
-    
     if (lightingType == 2)
     {
-        glFlush();
+       // glFlush();
         pass1();
         glFlush();
         pass2();
@@ -384,30 +394,24 @@ void SceneBasic_Uniform::render()
     {
         glFlush();
         renderConc();
+        //concProg.use();
+        //drawScene(concProg, false);
         glFlush();
         renderSmoke();
         glFlush();
     }
 }
 void SceneBasic_Uniform::renderSmoke() 
-{
-   
-    
-    smokeProg.use();
+{ 
     glDisable(GL_STENCIL_TEST);
-
-    glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glEnable(GL_DEPTH_TEST);
-
 
     glActiveTexture(GL_TEXTURE5);
     //glBindTexture(GL_TEXTURE_2D, smokeTex);
 
     glActiveTexture(GL_TEXTURE6);
     //glBindTexture(GL_TEXTURE_1D, smokePart);
-
+    smokeProg.use();
     smokeProg.setUniform("RandomTex", 6);
     smokeProg.setUniform("ParticleTex", 5);
 
@@ -435,8 +439,8 @@ void SceneBasic_Uniform::renderSmoke()
     smokeProg.setUniform("pass", 2);
     model = mat4(1.0f);
     //model = glm::scale(model, vec3(5));
-    projection = glm::perspective(glm::radians(60.0f), (float)width / height, 0.3f, 100.0f);
-    view = glm::lookAt(vec3(7.0f * cos(angle), 2.0f, 7.0f * sin(angle)), vec3(0, 2, 0), vec3(0, 1, 0));
+    projection = glm::perspective(glm::radians(30.0f), (float)width / height, 0.3f, 100.0f);
+    view = glm::lookAt(vec3(7.0f * cos(angleCount), 2.0f, 7.0f * sin(angleCount)), vec3(0, 2, 0), vec3(0, 1, 0));
     setMatrices(smokeProg);
 
     glDepthMask(GL_FALSE);
@@ -456,10 +460,10 @@ void SceneBasic_Uniform::pass1()
 {
     glDepthMask(GL_TRUE);
     glDisable(GL_STENCIL_TEST);
-    glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_DEPTH_TEST);
     projection = glm::infinitePerspective(glm::radians(30.0f), (float)width / height, 0.5f);
     //view = glm::lookAt(vec3(5.0f, 5.0f, 5.0f), vec3(0, 2, 0), vec3(0, 1, 0));
-    view = glm::lookAt(vec3(7.0f * cos(angle), 2.0f, 7.0f * sin(angle)), vec3(0, 2, 0), vec3(0, 1, 0));
+    view = glm::lookAt(vec3(7.0f * cos(angleCount), 2.0f, 7.0f * sin(angleCount)), vec3(0, 2, 0), vec3(0, 1, 0));
 
     shadVol.use();
     shadVol.setUniform("Pass", 1);
@@ -467,8 +471,6 @@ void SceneBasic_Uniform::pass1()
 
     glBindFramebuffer(GL_FRAMEBUFFER, colorDepthFBO);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
-
     drawScene(shadVol, false);
 }
 
@@ -527,18 +529,17 @@ void SceneBasic_Uniform::pass3()
     shadVol.setUniform("Pass", 2);
     shadVol.setUniform("LineColor", vec4(1.0* (CurTime / 0.5f), .622* (CurTime / 0.5f), 0, 0));
 
-    //compProg.use();
-    //compProg.setUniform("isItGround", 1);
-
     model = mat4(1.0f);
     projection = model;
     view = model;
     setMatrices(shadVol);
-    //setMatrices(compProg);
+
     glBindVertexArray(fsQuad);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindVertexArray(0);
 
+
+    //restore state
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
 }
@@ -561,9 +562,6 @@ void SceneBasic_Uniform::drawScene(GLSLProgram& prog, bool onlyShadowCasters)
         prog.setUniform("Kd", color);
         prog.setUniform("Ks", vec3(0.9f));
         prog.setUniform("Shininess", 150.0f);
-
-        prog.setUniform("isItGround", 1);
-
     }
 
     model = mat4(1.0f);
@@ -634,11 +632,31 @@ void SceneBasic_Uniform::renderConc()
 
     concProg.use();
     glActiveTexture(GL_TEXTURE2);
-    //glBindTexture(GL_TEXTURE_2D, brickTex);
-    glActiveTexture(GL_TEXTURE4);
-    //glBindTexture(GL_TEXTURE_2D, brickTexNorm);
+    glBindTexture(GL_TEXTURE_2D, bikeTex);
 
-    vec3 color = vec3(0.5f);
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, bikeTexNorm);
+
+    vec3 color = vec3(1.0f);
+    concProg.setUniform("Ka", color * 0.1f);
+    concProg.setUniform("Kd", color);
+    concProg.setUniform("Ks", vec3(0.9f));
+    concProg.setUniform("Shininess", 150.0f);
+
+
+    model = mat4(1.0f);
+    //model = glm::translate(model, vec3(-2.3f, 1.0f, 0.2f));
+    model = glm::rotate(model, glm::radians(180.0f), vec3(0.0f, 1.0f, 0.0f));
+    model = glm::scale(model, vec3(1.0f));
+    setMatrices(concProg);
+    bike->render();
+
+
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, brickTex);
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, brickTexNorm);
+    color = vec3(0.5f);
     concProg.setUniform("LightPosition", view * lightPos);
     concProg.setUniform("LightIntensity", vec3(.4f));
 
@@ -702,5 +720,5 @@ void SceneBasic_Uniform::resize(int w, int h)
     glViewport(0, 0, w, h);
     width = w;
     height = h;
-    projection = glm::perspective(glm::radians(60.0f), (float)w / h, 0.3f, 100.0f);
+    //projection = glm::perspective(glm::radians(60.0f), (float)w / h, 0.3f, 100.0f);
 }

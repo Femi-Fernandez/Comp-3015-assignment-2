@@ -38,13 +38,8 @@ const vec2 texCoords[] = vec2[]( vec2(0,0), vec2(1,0), vec2(1,1), vec2(0,0), vec
 
 vec3 randomInitialVel() 
 {
-    //float theta = mix(0.0, pi / 8.0, texelFetch(RandomTex, 3*gl_VertexID, 0).r);
-    //float phi = mix(0.0, 2.0 * pi,  texelFetch(RandomTex, 3*gl_VertexID + 1, 0).r);
-    //float velocity = mix(1.25, 1.5,  texelFetch(RandomTex, 3*gl_VertexID + 2, 0).r);
-    //vec3 v = vec3(sin(theta) * cos(phi), cos(theta), sin(theta) * sin(phi));
-    //return normalize(EmitterBasis * v) * velocity;]
     float velocity = mix(0.1f, 0.5f, texelFetch(RandomTex, 2 * gl_VertexID, 0).r);
-    return EmitterBasis * vec3(0, velocity, 0);
+    return EmitterBasis * vec3(0, -velocity, 0);
 }
 
 vec3 randomInitialPosition()
@@ -56,8 +51,8 @@ vec3 randomInitialPosition()
 
 void update()
 { 
-    Age = VertexAge + DeltaT;
-    //if particle is dead, reuse it
+        Age = VertexAge + DeltaT;
+    //if particle is dead or nonexistant yet, reuse/generate it
     if ((VertexAge < 0) || (VertexAge > ParticleLifetime))
     {
         Position = randomInitialPosition();
@@ -79,6 +74,7 @@ void update()
         Velocity = VertexVelocity + Accel *DeltaT;
         Age = VertexAge + DeltaT;
     }
+
 }
 
 void render()
