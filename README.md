@@ -46,5 +46,5 @@ DrawScene and renderConc almost do the same thing. they both draw in the ground,
 ## Known issues
 Upon running the program, the particles initially all spawn at once at 0,0,0. They begin to render correctly once the scene they are in reloads. 
 
-![smoke error](https://github.com/Femi-Fernandez/Comp-3015-assignment-2/main/images/smoke_error.PNG)
+![smoke error](https://github.com/Femi-Fernandez/Comp-3015-assignment-2/main/images/smoke_error.png)
 
