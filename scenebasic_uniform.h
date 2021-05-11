@@ -45,7 +45,6 @@ private:
     bool concClear;
     void initSmokeBuffers();
     void renderSmoke();
-    //void randFloat();
     void renderConc();
 
 
@@ -59,9 +58,6 @@ private:
     void pass2();
     void pass3();
     void updateLight();
-
-
-    //void spitOutDepthBuffer();
 
 public:
     SceneBasic_Uniform();

@@ -14,15 +14,19 @@ layout ( xfb_buffer = 2, xfb_offset = 0) out float Age;
 out float Transp;
 out vec2 TexCoord;
 
+//partical variables
 uniform float Time;
 uniform float DeltaT;
 uniform vec3 Accel;
 uniform float ParticleLifetime;
-uniform vec3 Emitter = vec3(0);
+uniform vec3 Emitter;
 uniform mat3 EmitterBasis;
 uniform float ParticleSize;
 
+uniform float maxPartSize = 0.5;
+uniform float minPartSize = 0.05;
 
+//MVP 
 uniform mat4 ModelViewMatrix;
 uniform mat4 ProjMatrix;
 
@@ -39,14 +43,7 @@ const vec2 texCoords[] = vec2[]( vec2(0,0), vec2(1,0), vec2(1,1), vec2(0,0), vec
 vec3 randomInitialVel() 
 {
     float velocity = mix(0.1f, 0.5f, texelFetch(RandomTex, 2 * gl_VertexID, 0).r);
-    return EmitterBasis * vec3(0, -velocity, 0);
-}
-
-vec3 randomInitialPosition()
-{
-    float offset = mix(-2.0f, 2.0f, texelFetch(RandomTex, 2* gl_VertexID + 1, 0).r);
-    //return Emitter + vec3(offset, 0,0);
-    return Emitter + vec3(0, 0,0);
+    return EmitterBasis * vec3(0, -velocity,0);
 }
 
 void update()
@@ -55,9 +52,12 @@ void update()
     //if particle is dead or nonexistant yet, reuse/generate it
     if ((VertexAge < 0) || (VertexAge > ParticleLifetime))
     {
-        Position = randomInitialPosition();
+    //set particle position to emitter location
+    //set velocity to start velocity
+        Position = Emitter;
         Velocity = randomInitialVel();
 
+        //if particle was alive but outlived age, reset its age
         if(VertexAge > ParticleLifetime)
         {
             Age = (VertexAge - ParticleLifetime) + DeltaT;
@@ -83,7 +83,9 @@ void render()
     vec3 posCam = vec3(0);
     if(VertexAge >= 0)
     {
-        posCam = (ModelViewMatrix * vec4(VertexPosition, 1)).xyz + offsets[gl_VertexID] * ParticleSize;
+    //change partical size based on lifetime
+        float agePerc = VertexAge/ParticleLifetime;
+        posCam = (ModelViewMatrix * vec4(VertexPosition, 1)).xyz + offsets[gl_VertexID] * mix(minPartSize, maxPartSize, agePerc);
         Transp = clamp(1.0 - VertexAge / ParticleLifetime, 0, 1);
     }
     TexCoord = texCoords[gl_VertexID];

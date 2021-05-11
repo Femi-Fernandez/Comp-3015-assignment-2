@@ -22,12 +22,12 @@ using glm::mat3;
 
 
 SceneBasic_Uniform::SceneBasic_Uniform() : tPrev(0), rotSpeed(0.1f)
-, time(0), deltaT(0), drawBuf(1), particleLifetime(3), nParticles(4000)
-, emitterPos(0.5f, 0.3f, -0.5f), emitterDir(-90, 0, 10)
+, time(0), deltaT(0), drawBuf(1), particleLifetime(2), nParticles(4000)
+, emitterPos(0.5f, 0.3f, -0.4f), emitterDir(-90, 0, 10)
 , lightingType(1)
-                                           //plane(10.0f, 10.0f, 2, 2, 1.0f, 1.0f)
+
 {
-    
+    //load ground, walls and the bike
     plane_1 = ObjMesh::loadWithAdjacency("media/plane.obj");
     plane_2 = ObjMesh::loadWithAdjacency("media/plane.obj");
     plane_3 = ObjMesh::loadWithAdjacency("media/plane.obj");
@@ -50,7 +50,7 @@ void SceneBasic_Uniform::initScene()
 
     angle = 0.0f;
     angleCount = 0.0f;
-    //setup framebuffer object
+    //setup framebuffer object for shadows
     setupFBO();
 
 
@@ -84,14 +84,13 @@ void SceneBasic_Uniform::initScene()
 
     //set smoke shader vars
     glActiveTexture(GL_TEXTURE5);
-    //Texture::loadTexture("media/smoke.png");
     smokeTex = Texture::loadTexture("media/smoke.png");
     glActiveTexture(GL_TEXTURE6);
-    //ParticleUtils::createRandomTex1D(nParticles * 3);
     smokePart =  ParticleUtils::createRandomTex1D(nParticles * 3);
-
+    //setup bufffers for particle system
     initSmokeBuffers();
 
+    //set variables for the smoke
     smokeProg.use();
     smokeProg.setUniform("RandomTex", 6);
     smokeProg.setUniform("ParticleTex",5);
@@ -100,16 +99,17 @@ void SceneBasic_Uniform::initScene()
     smokeProg.setUniform("ParticleSize", 0.5f);
     smokeProg.setUniform("Emitter", emitterPos);
     smokeProg.setUniform("EmitterBasis", ParticleUtils::makeArbitraryBasis(emitterDir));
-   // angle = glm::pi<float>() - 0.1;
+
     this->animate(true);
 }
 
 void SceneBasic_Uniform::updateLight() 
 {
+    //rotate light
     lightPos = vec4(5.0f * vec3(cosf(angle) * 5.5f, 1.5f, sinf(angle) * 7.5f), 1.0f);
 }
 
-
+//shadow buffer setup
 void SceneBasic_Uniform::setupFBO() 
 {
     GLfloat verts[] = { -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f,
@@ -182,6 +182,7 @@ void SceneBasic_Uniform::setupFBO()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+//smoke buffer setup
 void  SceneBasic_Uniform::initSmokeBuffers() 
 {
 
@@ -273,7 +274,7 @@ void  SceneBasic_Uniform::initSmokeBuffers()
 void SceneBasic_Uniform::compile()
 {
     try {
-        //shader for the volumes
+        //shaders for particals, shadows and plain shader. 
         volumeProg.compileShader("shader/basic_uniform.vert");
         volumeProg.compileShader("shader/basic_uniform.frag");
         volumeProg.compileShader("shader/basic_uniform.geom");
@@ -302,18 +303,16 @@ void SceneBasic_Uniform::compile()
     }
 }
 
-
-float lineBrightNess;
-bool valInc = true;
+//edge detection variables
+float lineBrightNess; //controls the brightness of edge detection
+bool valInc = true; 
 bool valDec = false;
 float ColChangeTime = .5f;
 float CurTime = 0;
 
-float particalWaitTime=0;
-float particalWaitTimeMax = 0.1f;
-bool setupParticals = false;
 void SceneBasic_Uniform::update( float t )
 {
+	//update your angle here
     deltaT = t - tPrev;
     
     if (tPrev == 0.0f)
@@ -325,33 +324,31 @@ void SceneBasic_Uniform::update( float t )
     time = tPrev;
     if (animating())
     {
-        // 0.2 *
-        angle +=  deltaT;
+        //update light angle
+        angle +=  deltaT*0.5f;
         angleCount = 1;
-        if (lightingType== 2)
-        {
-          //  angleCount += deltaT;
-            
-        }
+        //if the light has gone halfway across the scene, increase shading counter
         if (angle > glm::pi<float>()) 
         {
             angle -= glm::pi<float>();
             lightingType++;
+
+            //if shading counter too high, reset the counter and clear the screen. 
             if (lightingType > 2)
             {
-                //glDetachShader(shadVol);
                 lightingType = 1;
-                glColorMask(true, true, true, true);//This ensures that only alpha will be effected
-                glClearColor(0, 0, 0, 0);//alphaValue - Value to which you need to clear
+                glColorMask(true, true, true, true);
+                glClearColor(0, 0, 0, 0);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 glClearStencil(0);
-               // glClearBufferData(GL_FRAMEBUFFER, colorDepthFBO);
+
             }
         }
             
-
+        //update lights position.
         updateLight();
     }
+    //control if the outlines should be increeasing in brightness or decreasing
     if (valInc)
     {
         CurTime += deltaT;
@@ -371,18 +368,19 @@ void SceneBasic_Uniform::update( float t )
             valDec = false;
         }
     }
-    lightingType = 1;
+
+
+    //lightingType = 1;
 }
 
 int lightingType;
 
 void SceneBasic_Uniform::render()
 {
-    //renderSmoke();
-    //glFlush();
+    //if lightingType is 2, render edge detection and shadows
     if (lightingType == 2)
     {
-       // glFlush();
+        glFlush();
         pass1();
         glFlush();
         pass2();
@@ -390,12 +388,11 @@ void SceneBasic_Uniform::render()
         pass3();
         glFlush();
     }
+    //if lightingType is 1, render partical system
     if (lightingType == 1)
     {
         glFlush();
         renderConc();
-        //concProg.use();
-        //drawScene(concProg, false);
         glFlush();
         renderSmoke();
         glFlush();
@@ -403,22 +400,20 @@ void SceneBasic_Uniform::render()
 }
 void SceneBasic_Uniform::renderSmoke() 
 { 
+    //clear screen
     glDisable(GL_STENCIL_TEST);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    //enable smoke texture and particalRandomTex
     glActiveTexture(GL_TEXTURE5);
-    //glBindTexture(GL_TEXTURE_2D, smokeTex);
-
     glActiveTexture(GL_TEXTURE6);
-    //glBindTexture(GL_TEXTURE_1D, smokePart);
     smokeProg.use();
-    smokeProg.setUniform("RandomTex", 6);
-    smokeProg.setUniform("ParticleTex", 5);
 
+    //update the time keeping variables
     smokeProg.setUniform("Time", time);
     smokeProg.setUniform("DeltaT", deltaT);
 
-    // Update pass
+    // runs the update method
     smokeProg.setUniform("pass", 1);
     glEnable(GL_BLEND);
     glEnable(GL_RASTERIZER_DISCARD);
@@ -435,10 +430,10 @@ void SceneBasic_Uniform::renderSmoke()
 
     glEndTransformFeedback();
     glDisable(GL_RASTERIZER_DISCARD);
-    // Render pass
+
+    // runs the Render method
     smokeProg.setUniform("pass", 2);
     model = mat4(1.0f);
-    //model = glm::scale(model, vec3(5));
     projection = glm::perspective(glm::radians(30.0f), (float)width / height, 0.3f, 100.0f);
     view = glm::lookAt(vec3(7.0f * cos(angleCount), 2.0f, 7.0f * sin(angleCount)), vec3(0, 2, 0), vec3(0, 1, 0));
     setMatrices(smokeProg);
@@ -458,11 +453,10 @@ void SceneBasic_Uniform::renderSmoke()
 
 void SceneBasic_Uniform::pass1() 
 {
+    //render the shading of the objects in the scene
     glDepthMask(GL_TRUE);
     glDisable(GL_STENCIL_TEST);
-    //glEnable(GL_DEPTH_TEST);
     projection = glm::infinitePerspective(glm::radians(30.0f), (float)width / height, 0.5f);
-    //view = glm::lookAt(vec3(5.0f, 5.0f, 5.0f), vec3(0, 2, 0), vec3(0, 1, 0));
     view = glm::lookAt(vec3(7.0f * cos(angleCount), 2.0f, 7.0f * sin(angleCount)), vec3(0, 2, 0), vec3(0, 1, 0));
 
     shadVol.use();
@@ -476,55 +470,45 @@ void SceneBasic_Uniform::pass1()
 
 void SceneBasic_Uniform::pass2()
 {
-
+    //only render objects that will cast a shadow
+    
     volumeProg.use();
     volumeProg.setUniform("LightPosition", view * lightPos);
 
-    //copy depth and color from fbo into the default fbo
-    //color buffer should contain ambient component
     glBindFramebuffer(GL_READ_FRAMEBUFFER, colorDepthFBO);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(0, 0, width - 1, height - 1, 0, 0, width - 1, height - 1,
         GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-    //disable writing color buffer and depth buffer
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
     glDepthMask(GL_FALSE);
 
-    //rebind to default framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    //setup stencil test so that it always succeeds
-    //increases for front faces and decreases for back faces
     glClear(GL_STENCIL_BUFFER_BIT);
     glEnable(GL_STENCIL_TEST);
     glStencilFunc(GL_ALWAYS, 0, 0xffff);
     glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
     glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_DECR_WRAP);
 
-    //draw only shadow casters
     drawScene(volumeProg, true);
-
-    //enable writing to color buffer
 
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE );
 }
 
 void SceneBasic_Uniform::pass3() 
 {
-    //dont need depth test
+
     glDisable(GL_DEPTH_TEST);
 
-    //just want sum of ambient and diffuse + spec
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
 
-
-    //only render stancil pixels
+    //render the shadows
     glStencilFunc(GL_EQUAL, 0, 0xffff);
     glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-
+    //render the edge detection
     shadVol.use();
     shadVol.setUniform("Pass", 2);
     shadVol.setUniform("LineColor", vec4(1.0* (CurTime / 0.5f), .622* (CurTime / 0.5f), 0, 0));
@@ -548,9 +532,10 @@ void SceneBasic_Uniform::pass3()
 void SceneBasic_Uniform::drawScene(GLSLProgram& prog, bool onlyShadowCasters) 
 {
     vec3 color;
-
+    //only runs if shadows arnt being setup 
     if (!onlyShadowCasters)
     {
+        //setup bike and bike texture and normal
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, bikeTex);
 
@@ -571,9 +556,10 @@ void SceneBasic_Uniform::drawScene(GLSLProgram& prog, bool onlyShadowCasters)
     setMatrices(prog);
     bike->render();
 
-
+    //only runs if shadows arnt being setup 
     if (!onlyShadowCasters)
     {
+        //setup concrete and concrete texture and normal
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, brickTex);
         glActiveTexture(GL_TEXTURE4);
@@ -628,9 +614,12 @@ void SceneBasic_Uniform::drawScene(GLSLProgram& prog, bool onlyShadowCasters)
 
 void SceneBasic_Uniform::renderConc() 
 {
+    //clear screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    
+    //use shader that just has blinn-phong 
     concProg.use();
+    //setup bike
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, bikeTex);
 
@@ -652,6 +641,7 @@ void SceneBasic_Uniform::renderConc()
     bike->render();
 
 
+    //setup ground and walls
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, brickTex);
     glActiveTexture(GL_TEXTURE4);
@@ -665,7 +655,6 @@ void SceneBasic_Uniform::renderConc()
     concProg.setUniform("Ka", vec3(0.1f));
     concProg.setUniform("Shininess", 1.0f);
 
-    //prog.setUniform("isItGround", 0);
     model = mat4(1.0f);
     model = glm::scale(model, vec3(10));
     setMatrices(concProg);
@@ -720,5 +709,4 @@ void SceneBasic_Uniform::resize(int w, int h)
     glViewport(0, 0, w, h);
     width = w;
     height = h;
-    //projection = glm::perspective(glm::radians(60.0f), (float)w / h, 0.3f, 100.0f);
 }

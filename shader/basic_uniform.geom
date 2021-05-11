@@ -6,7 +6,7 @@ layout ( triangle_strip, max_vertices = 18 ) out;
 in vec3 VPosition[];
 in vec3 VNormal[];
 
-uniform vec4 LightPosition;  // Light position (eye coordinates)
+uniform vec4 LightPosition;
 uniform mat4 ProjMatrix;
 
 bool facesLight (vec3 a, vec3 b, vec3 c)
@@ -39,8 +39,8 @@ void emitEdgeQuad(vec3 a, vec3 b)
 void main()
 {
 //if the triangle faces the light, check each adjacent triangle.
-//if an adjacent triangle isnt facing the light, 
-//output a sihlouette edge quad for the corresponding edge.
+//if an adjacent triangle isnt facing the light
+//output a sihlouette edge quad for the edge.
 
 	if( facesLight(VPosition[0], VPosition[2], VPosition[4]) )
 	{

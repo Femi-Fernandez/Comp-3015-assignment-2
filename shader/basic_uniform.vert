@@ -16,7 +16,6 @@ uniform mat4 ProjMatrix;
 void main()
 {
     VPosition = (ModelViewMatrix * vec4(VertexPosition, 1.0)).xyz;
-    //normal no longer normalised
     VNormal = NormalMatrix * VertexNormal;
 
     gl_Position = ProjMatrix * ModelViewMatrix * vec4(VertexPosition, 1.0);

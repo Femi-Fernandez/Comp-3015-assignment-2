@@ -8,6 +8,7 @@ layout (location = 0) out vec4 FragColor;
 
 void main()
 {
+//sets the texture and transparency
 	FragColor = texture(ParticleTex, TexCoord);
 	FragColor.a *= Transp;
 }
