@@ -28,7 +28,7 @@ private:
     glm::vec4 lightPos;
 
     float angle, angleCount,  tPrev, rotSpeed;
-    int lightingType;
+    int renderType;
 
     //smoke 
     GLSLProgram smokeProg;

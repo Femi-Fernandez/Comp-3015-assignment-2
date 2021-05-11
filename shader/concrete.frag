@@ -38,16 +38,10 @@ vec4 shade(vec3 n)
 
 
 void main() {
-	//if(Pass == 1 ){
 		vec3 norm = texture(TexNorm, TexCoord).xyz;
 		norm.xy = 1.0 * norm.xy - 1.0;
-		//shade(norm);	
-	//}		
 
-	//if(Pass == 2)
-	//{
 		vec4 diffSpec = texelFetch(DiffSpecTex, ivec2(gl_FragCoord), 0);
 		FragColor = vec4(diffSpec.xyz, 1) + shade(norm);
-	//}
 
 }

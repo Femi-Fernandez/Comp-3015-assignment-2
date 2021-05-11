@@ -40,7 +40,7 @@ void main()
 {
 //if the triangle faces the light, check each adjacent triangle.
 //if an adjacent triangle isnt facing the light
-//output a sihlouette edge quad for the edge.
+//output a silhouette edge quad for the edge.
 
 	if( facesLight(VPosition[0], VPosition[2], VPosition[4]) )
 	{

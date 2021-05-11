@@ -24,7 +24,7 @@ using glm::mat3;
 SceneBasic_Uniform::SceneBasic_Uniform() : tPrev(0), rotSpeed(0.1f)
 , time(0), deltaT(0), drawBuf(1), particleLifetime(2), nParticles(4000)
 , emitterPos(0.5f, 0.3f, -0.4f), emitterDir(-90, 0, 10)
-, lightingType(1)
+, renderType(1)
 
 {
     //load ground, walls and the bike
@@ -331,12 +331,12 @@ void SceneBasic_Uniform::update( float t )
         if (angle > glm::pi<float>()) 
         {
             angle -= glm::pi<float>();
-            lightingType++;
+            renderType++;
 
             //if shading counter too high, reset the counter and clear the screen. 
-            if (lightingType > 2)
+            if (renderType > 2)
             {
-                lightingType = 1;
+                renderType = 1;
                 glColorMask(true, true, true, true);
                 glClearColor(0, 0, 0, 0);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -370,15 +370,15 @@ void SceneBasic_Uniform::update( float t )
     }
 
 
-    //lightingType = 1;
+    //renderType = 1;
 }
 
-int lightingType;
+int renderType;
 
 void SceneBasic_Uniform::render()
 {
-    //if lightingType is 2, render edge detection and shadows
-    if (lightingType == 2)
+    //if renderType is 2, render edge detection and shadows
+    if (renderType == 2)
     {
         glFlush();
         pass1();
@@ -388,8 +388,8 @@ void SceneBasic_Uniform::render()
         pass3();
         glFlush();
     }
-    //if lightingType is 1, render partical system
-    if (lightingType == 1)
+    //if renderType is 1, render partical system
+    if (renderType == 1)
     {
         glFlush();
         renderConc();

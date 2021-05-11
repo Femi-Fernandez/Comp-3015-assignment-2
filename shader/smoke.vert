@@ -21,7 +21,7 @@ uniform vec3 Accel;
 uniform float ParticleLifetime;
 uniform vec3 Emitter;
 uniform mat3 EmitterBasis;
-uniform float ParticleSize;
+//uniform float ParticleSize;
 
 uniform float maxPartSize = 0.5;
 uniform float minPartSize = 0.05;
@@ -33,9 +33,11 @@ uniform mat4 ProjMatrix;
 uniform sampler1D RandomTex;
 
 const float  pi = 3.14159f;
+//offsets the cam coordinates for each vertex of the partical
 const vec3 offsets[] = vec3[]( vec3(-.5, -.5, 0), vec3(.5, -.5, 0), vec3(.5, .5, 0),
                                vec3(-.5,-.5,0), vec3(.5, .5, 0), vec3(-.5, .5, 0));
 
+//texture coords for each partical quad
 const vec2 texCoords[] = vec2[]( vec2(0,0), vec2(1,0), vec2(1,1), vec2(0,0), vec2(1,1), vec2 (0,1) );
 
 
@@ -64,12 +66,16 @@ void update()
         } 
         else
         {
+            //update particles position using the Euler method
+            //approximates its position and speed based on predetermined values
             Position = VertexPosition + VertexVelocity *DeltaT;
             Velocity = VertexVelocity + Accel*DeltaT;
         }
     }
     else 
     {
+    //update particles position using the Euler method
+    //approximates its position and speed based on predetermined values
         Position = VertexPosition + VertexVelocity * DeltaT;
         Velocity = VertexVelocity + Accel *DeltaT;
         Age = VertexAge + DeltaT;
