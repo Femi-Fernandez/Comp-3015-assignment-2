@@ -43,7 +43,7 @@ void main()
 //output a silhouette edge quad for the edge.
 
 	if( facesLight(VPosition[0], VPosition[2], VPosition[4]) )
-	{
+	{ 
 		if( !facesLight(VPosition[0], VPosition[1], VPosition[2]) )
 			emitEdgeQuad(VPosition[0], VPosition[2]);
 		if( !facesLight(VPosition[2], VPosition[3], VPosition[4]) )
